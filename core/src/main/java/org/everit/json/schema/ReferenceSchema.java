@@ -22,61 +22,60 @@ package org.everit.json.schema;
  */
 public class ReferenceSchema extends Schema {
 
-  /**
-   * Builder class for {@link ReferenceSchema}.
-   */
-  public static class Builder extends Schema.Builder<ReferenceSchema> {
+    /**
+     * Builder class for {@link ReferenceSchema}.
+     */
+    public static class Builder extends Schema.Builder<ReferenceSchema> {
 
-    private ReferenceSchema retval;
+        private ReferenceSchema retval;
+
+        /**
+         * This method caches its result, so multiple invocations will return referentially the same
+         * {@link ReferenceSchema} instance.
+         */
+        @Override
+        public ReferenceSchema build() {
+            if (retval == null) {
+                retval = new ReferenceSchema(this);
+            }
+            return retval;
+        }
+
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private Schema referredSchema;
+
+    public ReferenceSchema(final Builder builder) {
+        super(builder);
+    }
+
+    @Override
+    public void validate(final Object subject) {
+        if (referredSchema == null) {
+            throw new IllegalStateException("referredSchema must be injected before validation");
+        }
+        referredSchema.validate(subject);
+    }
+
+    public Schema getReferredSchema() {
+        return referredSchema;
+    }
 
     /**
-     * This method caches its result, so multiple invocations will return referentially the same
-     * {@link ReferenceSchema} instance.
+     * Called by {@link org.everit.json.schema.loader.SchemaLoader#load()} to set the referred root
+     * schema after completing the loading process of the entire schema document.
+     *
+     * @param referredSchema the referred schema
      */
-    @Override
-    public ReferenceSchema build() {
-      if (retval == null) {
-        retval = new ReferenceSchema(this);
-      }
-      return retval;
+    public void setReferredSchema(final Schema referredSchema) {
+        if (this.referredSchema != null) {
+            throw new IllegalStateException("referredSchema can be injected only once");
+        }
+        this.referredSchema = referredSchema;
     }
-
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  private Schema referredSchema;
-
-  public ReferenceSchema(final Builder builder) {
-    super(builder);
-  }
-
-  @Override
-  public void validate(final Object subject) {
-    if (referredSchema == null) {
-      throw new IllegalStateException("referredSchema must be injected before validation");
-    }
-    referredSchema.validate(subject);
-  }
-
-  public Schema getReferredSchema() {
-    return referredSchema;
-  }
-
-  /**
-   * Called by {@link org.everit.json.schema.loader.SchemaLoader#load()} to set the referred root
-   * schema after completing the loading process of the entire schema document.
-   *
-   * @param referredSchema
-   *          the referred schema
-   */
-  public void setReferredSchema(final Schema referredSchema) {
-    if (this.referredSchema != null) {
-      throw new IllegalStateException("referredSchema can be injected only once");
-    }
-    this.referredSchema = referredSchema;
-  }
 
 }

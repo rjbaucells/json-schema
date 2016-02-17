@@ -20,33 +20,32 @@ package org.everit.json.schema;
  */
 public class BooleanSchema extends Schema {
 
-  /**
-   * Builder class for {@link BooleanSchema}.
-   */
-  public static class Builder extends Schema.Builder<BooleanSchema> {
+    /**
+     * Builder class for {@link BooleanSchema}.
+     */
+    public static class Builder extends Schema.Builder<BooleanSchema> {
+
+        @Override
+        public BooleanSchema build() {
+            return new BooleanSchema(this);
+        }
+
+    }
+
+    public static final BooleanSchema INSTANCE = new BooleanSchema(builder());
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public BooleanSchema(final Builder builder) {
+        super(builder);
+    }
 
     @Override
-    public BooleanSchema build() {
-      return new BooleanSchema(this);
+    public void validate(final Object subject) {
+        if (!(subject instanceof Boolean)) {
+            throw new ValidationException(this, Boolean.class, subject);
+        }
     }
-
-  }
-
-  public static final BooleanSchema INSTANCE = new BooleanSchema(builder());
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  public BooleanSchema(final Builder builder) {
-    super(builder);
-  }
-
-  @Override
-  public void validate(final Object subject) {
-    if (!(subject instanceof Boolean)) {
-      throw new ValidationException(this, Boolean.class, subject);
-    }
-  }
-
 }

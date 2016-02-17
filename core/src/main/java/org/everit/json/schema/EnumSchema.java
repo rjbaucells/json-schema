@@ -21,57 +21,56 @@ import java.util.Set;
 
 /**
  * Enum schema validator.
- *
  */
 public class EnumSchema extends Schema {
 
-  /**
-   * Builder class for {@link EnumSchema}.
-   */
-  public static class Builder extends Schema.Builder<EnumSchema> {
+    /**
+     * Builder class for {@link EnumSchema}.
+     */
+    public static class Builder extends Schema.Builder<EnumSchema> {
 
-    private Set<Object> possibleValues = new HashSet<>();
+        private Set<Object> possibleValues = new HashSet<>();
+
+        @Override
+        public EnumSchema build() {
+            return new EnumSchema(this);
+        }
+
+        public Builder possibleValue(final Object possibleValue) {
+            possibleValues.add(possibleValue);
+            return this;
+        }
+
+        public Builder possibleValues(final Set<Object> possibleValues) {
+            this.possibleValues = possibleValues;
+            return this;
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private final Set<Object> possibleValues;
+
+    public EnumSchema(final Builder builder) {
+        super(builder);
+        possibleValues = Collections.unmodifiableSet(new HashSet<>(builder.possibleValues));
+    }
+
+    public Set<Object> getPossibleValues() {
+        return possibleValues;
+    }
 
     @Override
-    public EnumSchema build() {
-      return new EnumSchema(this);
+    public void validate(final Object subject) {
+        possibleValues
+            .stream()
+            .filter(val -> ObjectComparator.deepEquals(val, subject))
+            .findAny()
+            .orElseThrow(
+                () -> new ValidationException(this, String.format("%s is not a valid enum value",
+                    subject)));
     }
-
-    public Builder possibleValue(final Object possibleValue) {
-      possibleValues.add(possibleValue);
-      return this;
-    }
-
-    public Builder possibleValues(final Set<Object> possibleValues) {
-      this.possibleValues = possibleValues;
-      return this;
-    }
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  private final Set<Object> possibleValues;
-
-  public EnumSchema(final Builder builder) {
-    super(builder);
-    possibleValues = Collections.unmodifiableSet(new HashSet<>(builder.possibleValues));
-  }
-
-  public Set<Object> getPossibleValues() {
-    return possibleValues;
-  }
-
-  @Override
-  public void validate(final Object subject) {
-    possibleValues
-        .stream()
-        .filter(val -> ObjectComparator.deepEquals(val, subject))
-        .findAny()
-        .orElseThrow(
-            () -> new ValidationException(this, String.format("%s is not a valid enum value",
-                subject)));
-  }
 
 }

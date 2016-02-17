@@ -24,10 +24,10 @@ import java.util.function.Consumer;
 @FunctionalInterface
 public interface ResolutionScopeChangeListener extends Consumer<String> {
 
-  @Override
-  default void accept(final String t) {
-    resolutionScopeChanged(t);
-  }
+    @Override
+    default void accept(final String t) {
+        resolutionScopeChanged(t);
+    }
 
-  void resolutionScopeChanged(String newResolutionScope);
+    void resolutionScopeChanged(String newResolutionScope);
 }

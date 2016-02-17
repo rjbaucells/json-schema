@@ -20,31 +20,31 @@ package org.everit.json.schema;
  */
 public class EmptySchema extends Schema {
 
-  public static final EmptySchema INSTANCE = new EmptySchema(builder());
+    public static final EmptySchema INSTANCE = new EmptySchema(builder());
 
-  /**
-   * Builder class for {@link EmptySchema}.
-   */
-  public static class Builder extends Schema.Builder<EmptySchema> {
+    /**
+     * Builder class for {@link EmptySchema}.
+     */
+    public static class Builder extends Schema.Builder<EmptySchema> {
 
-    @Override
-    public EmptySchema build() {
-      return new EmptySchema(this);
+        @Override
+        public EmptySchema build() {
+            return new EmptySchema(this);
+        }
+
     }
 
-  }
+    public static Builder builder() {
+        return new Builder();
+    }
 
-  public static Builder builder() {
-    return new Builder();
-  }
+    public EmptySchema(final Builder builder) {
+        super(builder);
+    }
 
-  public EmptySchema(final Builder builder) {
-    super(builder);
-  }
-
-  @Override
-  public void validate(final Object subject) {
-    // always passing
-  }
+    @Override
+    public void validate(final Object subject) {
+        // always passing
+    }
 
 }

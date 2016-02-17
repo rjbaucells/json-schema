@@ -22,122 +22,123 @@ import java.util.regex.Pattern;
  */
 public class StringSchema extends Schema {
 
-  /**
-   * Builder class for {@link StringSchema}.
-   */
-  public static class Builder extends Schema.Builder<StringSchema> {
+    /**
+     * Builder class for {@link StringSchema}.
+     */
+    public static class Builder extends Schema.Builder<StringSchema> {
 
-    private Integer minLength;
+        private Integer minLength;
 
-    private Integer maxLength;
+        private Integer maxLength;
 
-    private String pattern;
+        private String pattern;
 
-    private boolean requiresString = true;
+        private boolean requiresString = true;
+
+        @Override
+        public StringSchema build() {
+            return new StringSchema(this);
+        }
+
+        public Builder maxLength(final Integer maxLength) {
+            this.maxLength = maxLength;
+            return this;
+        }
+
+        public Builder minLength(final Integer minLength) {
+            this.minLength = minLength;
+            return this;
+        }
+
+        public Builder pattern(final String pattern) {
+            this.pattern = pattern;
+            return this;
+        }
+
+        public Builder requiresString(final boolean requiresString) {
+            this.requiresString = requiresString;
+            return this;
+        }
+
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private final Integer minLength;
+
+    private final Integer maxLength;
+
+    private final Pattern pattern;
+
+    private final boolean requiresString;
+
+    public StringSchema() {
+        this(builder());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param builder the builder object containing validation criteria
+     */
+    public StringSchema(final Builder builder) {
+        super(builder);
+        this.minLength = builder.minLength;
+        this.maxLength = builder.maxLength;
+        this.requiresString = builder.requiresString;
+        if (builder.pattern != null) {
+            this.pattern = Pattern.compile(builder.pattern);
+        }
+        else {
+            this.pattern = null;
+        }
+    }
+
+    public Integer getMaxLength() {
+        return maxLength;
+    }
+
+    public Integer getMinLength() {
+        return minLength;
+    }
+
+    public Pattern getPattern() {
+        return pattern;
+    }
+
+    private void testLength(final String subject) {
+        int actualLength = subject.length();
+        if (minLength != null && actualLength < minLength.intValue()) {
+            throw new ValidationException(this, "expected minLength: " + minLength + ", actual: "
+                + actualLength);
+        }
+        if (maxLength != null && actualLength > maxLength.intValue()) {
+            throw new ValidationException(this, "expected maxLength: " + maxLength + ", actual: "
+                + actualLength);
+        }
+    }
+
+    private void testPattern(final String subject) {
+        if (pattern != null && !pattern.matcher(subject).find()) {
+            throw new ValidationException(this, String.format("string [%s] does not match pattern %s",
+                subject, pattern.pattern()));
+        }
+    }
 
     @Override
-    public StringSchema build() {
-      return new StringSchema(this);
+    public void validate(final Object subject) {
+        if (!(subject instanceof String)) {
+            if (requiresString) {
+                throw new ValidationException(this, String.class, subject);
+            }
+        }
+        else {
+            String stringSubject = (String)subject;
+            testLength(stringSubject);
+            testPattern(stringSubject);
+        }
     }
-
-    public Builder maxLength(final Integer maxLength) {
-      this.maxLength = maxLength;
-      return this;
-    }
-
-    public Builder minLength(final Integer minLength) {
-      this.minLength = minLength;
-      return this;
-    }
-
-    public Builder pattern(final String pattern) {
-      this.pattern = pattern;
-      return this;
-    }
-
-    public Builder requiresString(final boolean requiresString) {
-      this.requiresString = requiresString;
-      return this;
-    }
-
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  private final Integer minLength;
-
-  private final Integer maxLength;
-
-  private final Pattern pattern;
-
-  private final boolean requiresString;
-
-  public StringSchema() {
-    this(builder());
-  }
-
-  /**
-   * Constructor.
-   *
-   * @param builder
-   *          the builder object containing validation criteria
-   */
-  public StringSchema(final Builder builder) {
-    super(builder);
-    this.minLength = builder.minLength;
-    this.maxLength = builder.maxLength;
-    this.requiresString = builder.requiresString;
-    if (builder.pattern != null) {
-      this.pattern = Pattern.compile(builder.pattern);
-    } else {
-      this.pattern = null;
-    }
-  }
-
-  public Integer getMaxLength() {
-    return maxLength;
-  }
-
-  public Integer getMinLength() {
-    return minLength;
-  }
-
-  public Pattern getPattern() {
-    return pattern;
-  }
-
-  private void testLength(final String subject) {
-    int actualLength = subject.length();
-    if (minLength != null && actualLength < minLength.intValue()) {
-      throw new ValidationException(this, "expected minLength: " + minLength + ", actual: "
-          + actualLength);
-    }
-    if (maxLength != null && actualLength > maxLength.intValue()) {
-      throw new ValidationException(this, "expected maxLength: " + maxLength + ", actual: "
-          + actualLength);
-    }
-  }
-
-  private void testPattern(final String subject) {
-    if (pattern != null && !pattern.matcher(subject).find()) {
-      throw new ValidationException(this, String.format("string [%s] does not match pattern %s",
-          subject, pattern.pattern()));
-    }
-  }
-
-  @Override
-  public void validate(final Object subject) {
-    if (!(subject instanceof String)) {
-      if (requiresString) {
-        throw new ValidationException(this, String.class, subject);
-      }
-    } else {
-      String stringSubject = (String) subject;
-      testLength(stringSubject);
-      testPattern(stringSubject);
-    }
-  }
 
 }

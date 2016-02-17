@@ -22,43 +22,44 @@ import java.util.Objects;
  */
 public class NotSchema extends Schema {
 
-  /**
-   * Builder class for {@link NotSchema}.
-   */
-  public static class Builder extends Schema.Builder<NotSchema> {
+    /**
+     * Builder class for {@link NotSchema}.
+     */
+    public static class Builder extends Schema.Builder<NotSchema> {
 
-    private Schema mustNotMatch;
+        private Schema mustNotMatch;
+
+        @Override
+        public NotSchema build() {
+            return new NotSchema(this);
+        }
+
+        public Builder mustNotMatch(final Schema mustNotMatch) {
+            this.mustNotMatch = mustNotMatch;
+            return this;
+        }
+
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private final Schema mustNotMatch;
+
+    public NotSchema(final Builder builder) {
+        super(builder);
+        this.mustNotMatch = Objects.requireNonNull(builder.mustNotMatch, "mustNotMatch cannot be null");
+    }
 
     @Override
-    public NotSchema build() {
-      return new NotSchema(this);
+    public void validate(final Object subject) {
+        try {
+            mustNotMatch.validate(subject);
+        }
+        catch (ValidationException e) {
+            return;
+        }
+        throw new ValidationException(this, "subject must not be valid agains schema " + mustNotMatch);
     }
-
-    public Builder mustNotMatch(final Schema mustNotMatch) {
-      this.mustNotMatch = mustNotMatch;
-      return this;
-    }
-
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  private final Schema mustNotMatch;
-
-  public NotSchema(final Builder builder) {
-    super(builder);
-    this.mustNotMatch = Objects.requireNonNull(builder.mustNotMatch, "mustNotMatch cannot be null");
-  }
-
-  @Override
-  public void validate(final Object subject) {
-    try {
-      mustNotMatch.validate(subject);
-    } catch (ValidationException e) {
-      return;
-    }
-    throw new ValidationException(this, "subject must not be valid agains schema " + mustNotMatch);
-  }
 }
