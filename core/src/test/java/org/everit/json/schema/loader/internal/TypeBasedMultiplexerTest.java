@@ -28,13 +28,12 @@ public class TypeBasedMultiplexerTest {
 
     @Test
     public void differentPortNum() {
-        expectScopeChanges(objectWithId("otherschema.json"), "http://x.y.z:8080/otherschema.json",
-            "http://x.y.z:8080/rootschema.json");
+        expectScopeChanges(objectWithId("otherschema.json").build(), "http://x.y.z:8080/otherschema.json", "http://x.y.z:8080/rootschema.json");
     }
 
     @Test
     public void dispatchesIdChangeEvent() {
-        JsonObject scopeChangingObj = objectWithId("changedId");
+        JsonObject scopeChangingObj = objectWithId("changedId").build();
         TypeBasedMultiplexer subject = new TypeBasedMultiplexer(null, scopeChangingObj, "orig");
         ResolutionScopeChangeListener mockListener = Mockito.mock(ResolutionScopeChangeListener.class);
         subject.addResolutionScopeChangeListener(mockListener);
@@ -58,45 +57,40 @@ public class TypeBasedMultiplexerTest {
 
     @Test
     public void fragmentIdOccurence() {
-        JsonObject objWithFragment = objectWithId("#foo");
-        expectScopeChanges(objWithFragment, "http://x.y.z/rootschema.json#foo",
-            "http://x.y.z/rootschema.json");
+        JsonObject objWithFragment = objectWithId("#foo").build();
+        expectScopeChanges(objWithFragment, "http://x.y.z/rootschema.json#foo", "http://x.y.z/rootschema.json");
     }
 
     @Test
     public void newRoot() {
-        expectScopeChanges(objectWithId("http://otherserver.com"), "http://otherserver.com",
-            "http://x.y.z:8080/rootschema.json");
+        expectScopeChanges(objectWithId("http://otherserver.com").build(), "http://otherserver.com", "http://x.y.z:8080/rootschema.json");
     }
 
     @Test
     public void nonFragmentRelativePath() {
-        expectScopeChanges(objectWithId("otherschema.json"), "http://x.y.z/otherschema.json",
-            "http://x.y.z/rootschema.json");
+        expectScopeChanges(objectWithId("otherschema.json").build(), "http://x.y.z/otherschema.json", "http://x.y.z/rootschema.json");
     }
 
-    private JsonObject objectWithId(final String idAttribute) {
+    private JsonObjectBuilder objectWithId(final String idAttribute) {
         // create builder
         JsonObjectBuilder builder = Json.createObjectBuilder();
         // add attribute
         builder.add("id", idAttribute);
-        // return object
-        return builder.build();
+        // return builder
+        return builder;
     }
 
     @Test
     public void relpathThenFragment() {
-        JsonObject outerObj = objectWithId("otherschema.json");
-        JsonObject innerObj = objectWithId("#bar");
-        outerObj.put("innerObj", innerObj);
-        TypeBasedMultiplexer outerMultiplexer = new TypeBasedMultiplexer(null, outerObj,
-            "http://x.y.z/rootschema.json");
+        JsonObjectBuilder outerObj = objectWithId("otherschema.json");
+        JsonObjectBuilder innerObj = objectWithId("#bar");
+        outerObj.add("innerObj", innerObj);
+        TypeBasedMultiplexer outerMultiplexer = new TypeBasedMultiplexer(null, outerObj.build(), "http://x.y.z/rootschema.json");
         ResolutionScopeChangeListener outerListener = Mockito.mock(ResolutionScopeChangeListener.class);
         ResolutionScopeChangeListener innerListener = Mockito.mock(ResolutionScopeChangeListener.class);
         outerMultiplexer.addResolutionScopeChangeListener(outerListener);
         outerMultiplexer.ifObject().then(obj -> {
-            TypeBasedMultiplexer innerMultiplexer = new TypeBasedMultiplexer(null, obj.get("innerObj"),
-                "http://x.y.z/otherschema.json");
+            TypeBasedMultiplexer innerMultiplexer = new TypeBasedMultiplexer(null, obj.get("innerObj"), "http://x.y.z/otherschema.json");
             innerMultiplexer.addResolutionScopeChangeListener(innerListener);
             innerMultiplexer.ifObject().then(o -> {
             }).requireAny();
@@ -109,8 +103,7 @@ public class TypeBasedMultiplexerTest {
 
     @Test
     public void relpathWithFragment() {
-        expectScopeChanges(objectWithId("t/inner.json#a"), "http://x.y.z:8080/t/inner.json#a",
-            "http://x.y.z:8080/rootschema.json");
+        expectScopeChanges(objectWithId("t/inner.json#a").build(), "http://x.y.z:8080/t/inner.json#a", "http://x.y.z:8080/rootschema.json");
     }
 
     @Test(expected = SchemaException.class)

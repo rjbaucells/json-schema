@@ -33,12 +33,14 @@ import org.everit.json.schema.loader.internal.DefaultSchemaClient;
 import org.everit.json.schema.loader.internal.JSONPointer;
 import org.everit.json.schema.loader.internal.JSONPointer.QueryResult;
 import org.everit.json.schema.loader.internal.ReferenceResolver;
-import org.everit.json.schema.loader.internal.TypeBasedMultiplexer;
+import org.everit.json.schema.loader.internal.ValueTypeBasedMultiplexer;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,56 +154,67 @@ public class SchemaLoader {
         this.pointerSchemas = pointerSchemas;
     }
 
-    private void addDependencies(final Builder builder, final JsonObject deps) {
-        StreamSupport.stream(deps.entrySet().spliterator(), false).forEach(entry -> addDependency(builder, entry.getKey(), entry.getValue()));
+    private void addDependencies(final Builder builder, final JsonObject dependencies) {
+        StreamSupport.stream(dependencies.entrySet().spliterator(), false).forEach(entry -> addDependency(builder, entry.getKey(), entry.getValue()));
     }
 
-    private void addDependency(final Builder builder, final String ifPresent, final Object deps) {
-        typeMultiplexer(deps)
-            .ifObject().then(obj -> builder.schemaDependency(ifPresent, loadChild(obj).build()))
-            .ifIs(JsonArray.class).then(propNames -> IntStream.range(0, propNames.size()).mapToObj(propNames::getString).forEach(dependency -> builder.propertyDependency(ifPresent, dependency))).requireAny();
+    private void addDependency(final Builder builder, final String ifPresent, final JsonValue dependency) {
+        valueTypeMultiplexer(dependency)
+            .ifObject().then(child -> builder.schemaDependency(ifPresent, loadChild((JsonObject)child).build()))
+            .ifIs(JsonValue.ValueType.ARRAY).then(jsonValue -> processJsonArray(builder, ifPresent, jsonValue)).requireAny();
     }
 
-    private void addPropertySchemaDefinition(final String keyOfObj, final Object definition,
-                                             final ObjectSchema.Builder builder) {
-        typeMultiplexer(definition)
-            .ifObject()
-            .then(obj -> {
-                builder.addPropertySchema(keyOfObj, loadChild(obj).build());
-            })
+    private static void processJsonArray(final Builder builder, final String ifPresent, final JsonValue jsonValue) {
+        // cast to array
+        JsonArray jsonArray = (JsonArray)jsonValue;
+        // loop indices
+        IntStream.range(0, jsonArray.size()).mapToObj(jsonArray::get).forEach(dependency -> builder.propertyDependency(ifPresent, ((JsonString)dependency).getString()));
+    }
+
+    private void addPropertySchemaDefinition(final String keyOfObj, final JsonValue definition, final ObjectSchema.Builder builder) {
+        // create multiplexer
+        valueTypeMultiplexer(definition)
+            .ifObject().then(jsonValue -> builder.addPropertySchema(keyOfObj, loadChild((JsonObject)jsonValue).build()))
             .requireAny();
     }
 
     private CombinedSchema.Builder buildAnyOfSchemaForMultipleTypes() {
         JsonArray subtypeJsons = schemaJson.getJsonArray("type");
-        Map<String, Object> dummyJson = new HashMap<>();
-        Collection<Schema> subschemas = new ArrayList<>(subtypeJsons.size());
+        Collection<Schema> subSchemas = new ArrayList<>(subtypeJsons.size());
         for (int i = 0; i < subtypeJsons.size(); ++i) {
             JsonValue subtypeJson = subtypeJsons.get(i);
             // create Json object builder
             JsonObjectBuilder builder = Json.createObjectBuilder();
+            // type field
             builder.add("type", subtypeJson);
             // load child and add it to sub-schemas
-            subschemas.add(loadChild(builder.build()).build());
+            subSchemas.add(loadChild(builder.build()).build());
         }
-        return CombinedSchema.anyOf(subschemas);
+        return CombinedSchema.anyOf(subSchemas);
     }
 
     private ArraySchema.Builder buildArraySchema() {
+        // create builder
         ArraySchema.Builder builder = ArraySchema.builder();
-        ifPresent("minItems", Integer.class, builder::minItems);
-        ifPresent("maxItems", Integer.class, builder::maxItems);
-        ifPresent("uniqueItems", Boolean.class, builder::uniqueItems);
+        // add constraints
+        ifPresent("minItems", JsonNumber.class, JsonNumber::intValue, builder::minItems);
+        ifPresent("maxItems", JsonNumber.class, JsonNumber::intValue, builder::maxItems);
+        ifPresent("uniqueItems", JsonValue.class, JsonValue.TRUE::equals, builder::uniqueItems);
+        // check additional items was provided
         if (schemaJson.containsKey("additionalItems")) {
-            typeMultiplexer("additionalItems", schemaJson.get("additionalItems"))
-                .ifIs(Boolean.class).then(builder::additionalItems)
-                .ifObject().then(jsonObj -> builder.schemaOfAdditionalItems(loadChild(jsonObj).build()))
+            // create and configure multiplexer
+            valueTypeMultiplexer("additionalItems", schemaJson.get("additionalItems"))
+                .ifIs(JsonValue.ValueType.TRUE).then(jsonValue -> builder.additionalItems(true))
+                .ifIs(JsonValue.ValueType.FALSE).then(jsonValue -> builder.additionalItems(false))
+                .ifObject().then(jsonValue -> builder.schemaOfAdditionalItems(loadChild((JsonObject)jsonValue).build()))
                 .requireAny();
         }
+        // check items was provided
         if (schemaJson.containsKey("items")) {
-            typeMultiplexer("items", schemaJson.get("items"))
-                .ifObject().then(itemSchema -> builder.allItemSchema(loadChild(itemSchema).build()))
-                .ifIs(JsonArray.class).then(arr -> buildTupleSchema(builder, arr))
+            // create and configure multiplexer
+            valueTypeMultiplexer("items", schemaJson.get("items"))
+                .ifObject().then(jsonValue -> builder.allItemSchema(loadChild((JsonObject)jsonValue).build()))
+                .ifIs(JsonValue.ValueType.ARRAY).then(jsonValue -> buildTupleSchema(builder, (JsonArray)jsonValue))
                 .requireAny();
         }
         return builder;
@@ -222,29 +235,37 @@ public class SchemaLoader {
     }
 
     private NumberSchema.Builder buildNumberSchema() {
+        // schema builder
         NumberSchema.Builder builder = NumberSchema.builder();
-        ifPresent("minimum", Number.class, builder::minimum);
-        ifPresent("maximum", Number.class, builder::maximum);
-        ifPresent("multipleOf", Number.class, builder::multipleOf);
-        ifPresent("exclusiveMinimum", Boolean.class, builder::exclusiveMinimum);
-        ifPresent("exclusiveMaximum", Boolean.class, builder::exclusiveMaximum);
+        // Number specific constraints
+        ifPresent("minimum", JsonNumber.class, JsonNumber::intValue, builder::minimum);
+        ifPresent("maximum", JsonNumber.class, JsonNumber::intValue, builder::maximum);
+        ifPresent("multipleOf", JsonNumber.class, JsonNumber::doubleValue, builder::multipleOf);
+        ifPresent("exclusiveMinimum", JsonValue.class, JsonValue.TRUE::equals, builder::exclusiveMinimum);
+        ifPresent("exclusiveMaximum", JsonValue.class, JsonValue.TRUE::equals, builder::exclusiveMaximum);
+        // return builder
         return builder;
     }
 
     private ObjectSchema.Builder buildObjectSchema() {
+        // create builder
         ObjectSchema.Builder builder = ObjectSchema.builder();
-        ifPresent("minProperties", Integer.class, builder::minProperties);
-        ifPresent("maxProperties", Integer.class, builder::maxProperties);
+        // min & max fields
+        ifPresent("minProperties", JsonNumber.class, JsonNumber::intValue, builder::minProperties);
+        ifPresent("maxProperties", JsonNumber.class, JsonNumber::intValue, builder::maxProperties);
+        // check schema contains properties
         if (schemaJson.containsKey("properties")) {
-            typeMultiplexer(schemaJson.get("properties"))
-                .ifObject().then(propertyDefs -> {
-                populatePropertySchemas(propertyDefs, builder);
-            }).requireAny();
+            // create multiplexer
+            valueTypeMultiplexer(schemaJson.get("properties"))
+                .ifObject().then(propertyDefinitions -> populatePropertySchemas((JsonObject)propertyDefinitions, builder))
+                .requireAny();
         }
         if (schemaJson.containsKey("additionalProperties")) {
-            typeMultiplexer("additionalProperties", schemaJson.get("additionalProperties"))
-                .ifIs(Boolean.class).then(builder::additionalProperties)
-                .ifObject().then(def -> builder.schemaOfAdditionalProperties(loadChild(def).build()))
+            // create multiplexer
+            valueTypeMultiplexer("additionalProperties", schemaJson.get("additionalProperties"))
+                .ifIs(JsonValue.ValueType.TRUE).then(jsonValue -> builder.additionalProperties(true))
+                .ifIs(JsonValue.ValueType.FALSE).then(jsonValue -> builder.additionalProperties(false))
+                .ifObject().then(definition -> builder.schemaOfAdditionalProperties(loadChild((JsonObject)definition).build()))
                 .requireAny();
         }
         if (schemaJson.containsKey("required")) {
@@ -259,7 +280,9 @@ public class SchemaLoader {
             for (String pattern : patterns)
                 builder.patternProperty(pattern, loadChild(patternPropsJson.getJsonObject(pattern)).build());
         }
-        ifPresent("dependencies", JsonObject.class, deps -> addDependencies(builder, deps));
+        // add dependencies if needed
+        ifPresent("dependencies", JsonObject.class, dependencies -> addDependencies(builder, dependencies));
+        // return builder
         return builder;
     }
 
@@ -282,16 +305,18 @@ public class SchemaLoader {
 
     private StringSchema.Builder buildStringSchema() {
         StringSchema.Builder builder = StringSchema.builder();
-        ifPresent("minLength", Integer.class, builder::minLength);
-        ifPresent("maxLength", Integer.class, builder::maxLength);
-        ifPresent("pattern", String.class, builder::pattern);
+        ifPresent("minLength", JsonNumber.class, JsonNumber::intValue, builder::minLength);
+        ifPresent("maxLength", JsonNumber.class, JsonNumber::intValue, builder::maxLength);
+        ifPresent("pattern", JsonString.class, JsonString::getString, builder::pattern);
         return builder;
     }
 
     private void buildTupleSchema(final ArraySchema.Builder builder, final JsonArray itemSchema) {
+        // loop array
         for (int i = 0; i < itemSchema.size(); ++i) {
-            typeMultiplexer(itemSchema.get(i))
-                .ifObject().then(schema -> builder.addItemSchema(loadChild(schema).build()))
+            // create multiplexer for item
+            valueTypeMultiplexer(itemSchema.get(i))
+                .ifObject().then(schema -> builder.addItemSchema(loadChild((JsonObject)schema).build()))
                 .requireAny();
         }
     }
@@ -315,14 +340,35 @@ public class SchemaLoader {
         return builder.build();
     }
 
+    @SuppressWarnings("unchecked")
     private <E> void ifPresent(final String key, final Class<E> expectedType, final Consumer<E> consumer) {
+        // check schema
         if (schemaJson.containsKey(key)) {
-            @SuppressWarnings("unchecked")
+            // cast value to expected type
             E value = (E)schemaJson.get(key);
             try {
+                // convert value and consume it
                 consumer.accept(value);
             }
             catch (ClassCastException e) {
+                // invalid type!
+                throw new SchemaException(key, expectedType, value);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E, V> void ifPresent(final String key, final Class<E> expectedType, final Function<E, V> convert, final Consumer<V> consumer) {
+        // check schema
+        if (schemaJson.containsKey(key)) {
+            // cast value to expected type
+            E value = (E)schemaJson.get(key);
+            try {
+                // convert value and consume it
+                consumer.accept(convert.apply(value));
+            }
+            catch (ClassCastException e) {
+                // invalid type!
                 throw new SchemaException(key, expectedType, value);
             }
         }
@@ -351,9 +397,9 @@ public class SchemaLoader {
                 }
             }
         }
-        ifPresent("id", String.class, builder::id);
-        ifPresent("title", String.class, builder::title);
-        ifPresent("description", String.class, builder::description);
+        ifPresent("id", JsonString.class, JsonString::getString, builder::id);
+        ifPresent("title", JsonString.class, JsonString::getString, builder::title);
+        ifPresent("description", JsonString.class, JsonString::getString, builder::description);
         return builder;
     }
 
@@ -383,15 +429,23 @@ public class SchemaLoader {
     }
 
     private Schema.Builder<?> loadForType(final Object type) {
+        // check it is a JsonArray
         if (type instanceof JsonArray) {
+            // build schema
             return buildAnyOfSchemaForMultipleTypes();
         }
-        else if (type instanceof String) {
+        // String value
+        if (type instanceof String) {
+            // build schema
             return loadForExplicitType((String)type);
         }
-        else {
-            throw new SchemaException("type", Arrays.asList(JsonArray.class, String.class), type);
+        // JsonString
+        if (type instanceof JsonString) {
+            // build schema
+            return loadForExplicitType(((JsonString)type).getString());
         }
+        // schema exception
+        throw new SchemaException("type", Arrays.asList(JsonArray.class, String.class), type);
     }
 
     /**
@@ -416,8 +470,8 @@ public class SchemaLoader {
         return refBuilder;
     }
 
-    private void populatePropertySchemas(final JsonObject propertyDefs, final ObjectSchema.Builder builder) {
-        StreamSupport.stream(propertyDefs.keySet().spliterator(), false).forEach(key -> addPropertySchemaDefinition(key, propertyDefs.get(key), builder));
+    private void populatePropertySchemas(final JsonObject propertyDefinitions, final ObjectSchema.Builder builder) {
+        StreamSupport.stream(propertyDefinitions.keySet().spliterator(), false).forEach(key -> addPropertySchemaDefinition(key, propertyDefinitions.get(key), builder));
     }
 
     private boolean schemaHasAnyOf(final Collection<String> propNames) {
@@ -477,15 +531,16 @@ public class SchemaLoader {
         }
     }
 
-    private TypeBasedMultiplexer typeMultiplexer(final Object obj) {
-        return typeMultiplexer(null, obj);
+    private ValueTypeBasedMultiplexer valueTypeMultiplexer(final JsonValue obj) {
+        return valueTypeMultiplexer(null, obj);
     }
 
-    private TypeBasedMultiplexer typeMultiplexer(final String keyOfObj, final Object obj) {
-        TypeBasedMultiplexer multiplexer = new TypeBasedMultiplexer(keyOfObj, obj, id);
-        multiplexer.addResolutionScopeChangeListener(scope -> {
-            this.id = scope;
-        });
+    private ValueTypeBasedMultiplexer valueTypeMultiplexer(final String keyOfObj, final JsonValue obj) {
+        // create multiplexer
+        ValueTypeBasedMultiplexer multiplexer = new ValueTypeBasedMultiplexer(keyOfObj, obj, id);
+        // add listener
+        multiplexer.addResolutionScopeChangeListener(scope -> this.id = scope);
+        // return multiplexer
         return multiplexer;
     }
 

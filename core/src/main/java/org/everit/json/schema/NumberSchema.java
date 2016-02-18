@@ -29,17 +29,11 @@ public class NumberSchema extends Schema {
     public static class Builder extends Schema.Builder<NumberSchema> {
 
         private Number minimum;
-
         private Number maximum;
-
         private Number multipleOf;
-
         private boolean exclusiveMinimum = false;
-
         private boolean exclusiveMaximum = false;
-
         private boolean requiresNumber = true;
-
         private boolean requiresInteger = false;
 
         @Override
@@ -91,9 +85,7 @@ public class NumberSchema extends Schema {
     private final boolean requiresNumber;
 
     private final Number minimum;
-
     private final Number maximum;
-
     private final Number multipleOf;
 
     private boolean exclusiveMinimum = false;
@@ -145,9 +137,10 @@ public class NumberSchema extends Schema {
     }
 
     private void checkMultipleOf(final double subject) {
+        // check multipleOf was provided
         if (multipleOf != null) {
-            BigDecimal remainder = BigDecimal.valueOf(subject).remainder(
-                BigDecimal.valueOf(multipleOf.doubleValue()));
+            // calculate remainder
+            BigDecimal remainder = BigDecimal.valueOf(subject).remainder(BigDecimal.valueOf(multipleOf.doubleValue()));
             if (remainder.compareTo(BigDecimal.ZERO) != 0) {
                 throw new ValidationException(this, subject + " is not a multiple of " + multipleOf);
             }

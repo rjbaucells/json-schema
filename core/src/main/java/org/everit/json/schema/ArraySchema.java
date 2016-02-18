@@ -160,10 +160,13 @@ public class ArraySchema extends Schema {
 
     private Optional<ValidationException> ifFails(final Schema schema, final Object input) {
         try {
+            // validate input
             schema.validate(input);
+            // everything is ok
             return Optional.empty();
         }
         catch (ValidationException e) {
+            // return exception
             return Optional.of(e);
         }
     }
@@ -181,15 +184,20 @@ public class ArraySchema extends Schema {
     }
 
     private Optional<ValidationException> testItemCount(final JsonArray subject) {
+        Objects.requireNonNull(subject, "subject cannot be null");
+        // array size
         int actualLength = subject.size();
+        // check minimum size if needed
         if (minItems != null && actualLength < minItems) {
-            return Optional.of(new ValidationException(this, "expected minimum item count: " + minItems
-                + ", found: " + actualLength));
+            // return exception
+            return Optional.of(new ValidationException(this, "expected minimum item count: " + minItems + ", found: " + actualLength));
         }
+        // check maximum size if needed
         if (maxItems != null && maxItems < actualLength) {
-            return Optional.of(new ValidationException(this, "expected maximum item count: " + minItems
-                + ", found: " + actualLength));
+            // return exception
+            return Optional.of(new ValidationException(this, "expected maximum item count: " + minItems + ", found: " + actualLength));
         }
+        // ok
         return Optional.empty();
     }
 

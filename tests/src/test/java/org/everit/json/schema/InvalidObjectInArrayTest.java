@@ -28,7 +28,7 @@ public class InvalidObjectInArrayTest {
 
     private JsonObject readObject(final String fileName) {
         // get resource stream
-        InputStream stream = InvalidObjectInArrayTest.class.getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json" + fileName);
+        InputStream stream = InvalidObjectInArrayTest.class.getResourceAsStream("/org/everit/json/schema/invalidobjectinarray/" + fileName);
         // create reader
         try (JsonReader reader = Json.createReader(stream)) {
             // read json object
@@ -48,5 +48,4 @@ public class InvalidObjectInArrayTest {
             Assert.assertEquals("#/notification/target/apps/0/id", e.getPointerToViolation());
         }
     }
-
 }

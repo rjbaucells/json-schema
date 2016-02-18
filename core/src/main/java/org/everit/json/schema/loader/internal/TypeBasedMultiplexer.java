@@ -37,9 +37,9 @@ import java.util.function.Consumer;
  * Example usage: <code>
  * Object additProps = schemaJson.get("additionalProperties");
  * typeMultiplexer(additionalProps)
- * .ifIs(JSONArray.class).then(arr -&gt; {...if additProps is a JSONArray then process it... })
- * .ifObject().then(obj -&gt; {...if additProps is a JSONArray then process it... })
- * .requireAny(); // throw a SchemaException if additProps is neither a JSONArray nor a JsonObject
+ * .ifIs(JsonArray.class).then(arr -&gt; {...if additProps is a JsonArray then process it... })
+ * .ifObject().then(obj -&gt; {...if additProps is a JsonArray then process it... })
+ * .requireAny(); // throw a SchemaException if additProps is neither a JsonArray nor a JsonObject
  * </code>
  * <p>
  * This class it NOT thread-safe.
@@ -244,7 +244,7 @@ public class TypeBasedMultiplexer {
      */
     public void requireAny() {
         orElse(obj -> {
-            throw new SchemaException(keyOfObj, new ArrayList<Class<?>>(actions.keySet()), obj);
+            throw new SchemaException(keyOfObj, new ArrayList<>(actions.keySet()), obj);
         });
     }
 

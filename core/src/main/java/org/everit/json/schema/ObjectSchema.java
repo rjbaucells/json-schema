@@ -43,23 +43,14 @@ public class ObjectSchema extends Schema {
     public static class Builder extends Schema.Builder<ObjectSchema> {
 
         private final Map<Pattern, Schema> patternProperties = new HashMap<>();
-
         private boolean requiresObject = true;
-
         private final Map<String, Schema> propertySchemas = new HashMap<>();
-
         private boolean additionalProperties = true;
-
         private Schema schemaOfAdditionalProperties;
-
-        private final List<String> requiredProperties = new ArrayList<String>(0);
-
+        private final List<String> requiredProperties = new ArrayList<>(0);
         private Integer minProperties;
-
         private Integer maxProperties;
-
         private final Map<String, Set<String>> propertyDependencies = new HashMap<>();
-
         private final Map<String, Schema> schemaDependencies = new HashMap<>();
 
         public Builder additionalProperties(final boolean additionalProperties) {
@@ -144,7 +135,6 @@ public class ObjectSchema extends Schema {
             this.schemaOfAdditionalProperties = schemaOfAdditionalProperties;
             return this;
         }
-
     }
 
     public static Builder builder() {
@@ -156,23 +146,14 @@ public class ObjectSchema extends Schema {
     }
 
     private final Map<String, Schema> propertySchemas;
-
     private final boolean additionalProperties;
-
     private final Schema schemaOfAdditionalProperties;
-
     private final List<String> requiredProperties;
-
     private final Integer minProperties;
-
     private final Integer maxProperties;
-
     private final Map<String, Set<String>> propertyDependencies;
-
     private final Map<String, Schema> schemaDependencies;
-
     private final boolean requiresObject;
-
     private final Map<Pattern, Schema> patternProperties;
 
     /**

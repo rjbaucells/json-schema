@@ -15,7 +15,8 @@
  */
 package org.everit.json.schema;
 
-import java.util.List;
+import javax.json.JsonValue;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -31,26 +32,30 @@ public class SchemaException extends RuntimeException {
     }
 
     public SchemaException(final String key, final Class<?> expectedType, final Object actualValue) {
-        super(String.format("key %s : expected type: %s , found : %s", key, expectedType
-            .getSimpleName(), (actualValue == null ? "null" : actualValue.getClass().getSimpleName())));
+        super(String.format("key %s : expected type: %s , found : %s", key, expectedType.getSimpleName(), (actualValue == null ? "null" : actualValue.getClass().getSimpleName())));
     }
 
-    public SchemaException(final String key, final List<Class<?>> expectedTypes,
-                           final Object actualValue) {
-        super(String.format("key %s: expected type is one of %s, found: %s",
-            key, joinClassNames(expectedTypes), typeOfValue(actualValue)));
+    public SchemaException(final String key, final Collection<Class<?>> expectedTypes, final Object actualValue) {
+        super(String.format("key %s: expected type is one of %s, found: %s", key, joinClassNames(expectedTypes), typeOfValue(actualValue)));
+    }
+
+    public SchemaException(final String key, final Collection<JsonValue.ValueType> expectedValueTypes, final JsonValue actualValue) {
+        super(String.format("key %s: expected type is one of %s, found: %s", key, joinValueTypes(expectedValueTypes), typeOfValue(actualValue)));
     }
 
     private static Object typeOfValue(final Object actualValue) {
         return actualValue == null ? "null" : actualValue.getClass().getSimpleName();
     }
 
-    private static String joinClassNames(final List<Class<?>> expectedTypes) {
+    private static String joinClassNames(final Collection<Class<?>> expectedTypes) {
         return expectedTypes.stream().map(Class::getSimpleName).collect(Collectors.joining(", "));
+    }
+
+    private static String joinValueTypes(final Collection<JsonValue.ValueType> expectedValueTypes) {
+        return expectedValueTypes.stream().map(Enum::toString).collect(Collectors.joining(", "));
     }
 
     public SchemaException(final String message, final Throwable cause) {
         super(message, cause);
     }
-
 }

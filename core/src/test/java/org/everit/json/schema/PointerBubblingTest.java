@@ -27,7 +27,6 @@ import java.io.InputStream;
 public class PointerBubblingTest {
 
     private static final JsonObject allSchemas;
-
     private static final JsonObject testInputs;
 
     static {
@@ -38,7 +37,6 @@ public class PointerBubblingTest {
             // read json object
             allSchemas = reader.readObject();
         }
-
         // get resource stream
         stream = PointerBubblingTest.class.getResourceAsStream("/org/everit/jsonvalidator/objecttestcases.json");
         // create reader

@@ -58,7 +58,7 @@ public class TestSuiteTest {
             new ResourcesScanner());
         Set<String> paths = refs.getResources(Pattern.compile(".*\\.json"));
         for (String path : paths) {
-            if (path.indexOf("/optional/") > -1 || path.indexOf("/remotes/") > -1) {
+            if (path.contains("/optional/") || path.contains("/remotes/")) {
                 continue;
             }
             String fileName = path.substring(path.lastIndexOf('/') + 1);
@@ -98,13 +98,9 @@ public class TestSuiteTest {
     }
 
     private final String schemaDescription;
-
     private final JsonObject schemaJson;
-
     private final String inputDescription;
-
     private final Object input;
-
     private final boolean expectedToBeValid;
 
     public TestSuiteTest(final String schemaDescription, final JsonObject schemaJson,
