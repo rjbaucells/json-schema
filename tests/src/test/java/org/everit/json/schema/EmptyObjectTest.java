@@ -16,24 +16,36 @@
 package org.everit.json.schema;
 
 import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.junit.Test;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import java.io.InputStream;
+
 public class EmptyObjectTest {
+
     @Test
     public void validateEmptyObject() {
-
-        JSONObject jsonSchema = new JSONObject(new JSONTokener(
-                MetaSchemaTest.class
-                        .getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json")));
-
-        JSONObject jsonSubject = new JSONObject("{\n" +
-                "  \"type\": \"object\",\n" +
-                "  \"properties\": {}\n" +
-                "}");
-
+        // schema
+        JsonObject jsonSchema;
+        // get resource stream
+        InputStream stream = MetaSchemaTest.class.getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            jsonSchema = reader.readObject();
+        }
+        // create json object builder
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        // type
+        builder.add("type", "object");
+        // properties
+        builder.add("properties", Json.createObjectBuilder());
+        // load schema
         Schema schema = SchemaLoader.load(jsonSchema);
-        schema.validate(jsonSubject);
+        // validate json
+        schema.validate(builder.build());
     }
 }

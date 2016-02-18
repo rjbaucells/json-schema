@@ -16,40 +16,58 @@
 package org.everit.json.schema;
 
 import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import java.io.InputStream;
+
 public class PointerBubblingTest {
 
-  private final JSONObject allSchemas = new JSONObject(new JSONTokener(
-      getClass().getResourceAsStream("/org/everit/jsonvalidator/testschemas.json")));
+    private static final JsonObject allSchemas;
 
-  private final Schema rectangleSchema = SchemaLoader
-      .load(allSchemas.getJSONObject("pointerResolution"));
+    private static final JsonObject testInputs;
 
-  private final JSONObject testInputs = new JSONObject(new JSONTokener(
-      getClass().getResourceAsStream("/org/everit/jsonvalidator/objecttestcases.json")));
+    static {
+        // get resource stream
+        InputStream stream = PointerBubblingTest.class.getResourceAsStream("/org/everit/jsonvalidator/testschemas.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            allSchemas = reader.readObject();
+        }
 
-  @Test
-  public void rectangleMultipleFailures() {
-    JSONObject input = testInputs.getJSONObject("rectangleMultipleFailures");
-    try {
-      rectangleSchema.validate(input);
-      Assert.fail();
-    } catch (ValidationException e) {
-      Assert.assertEquals("#/rectangle", e.getPointerToViolation());
-      Assert.assertEquals(2, e.getCausingExceptions().size());
-      Assert.assertEquals(1, TestSupport.countCauseByJsonPointer(e, "#/rectangle/a"));
-      Assert.assertEquals(1, TestSupport.countCauseByJsonPointer(e, "#/rectangle/b"));
+        // get resource stream
+        stream = PointerBubblingTest.class.getResourceAsStream("/org/everit/jsonvalidator/objecttestcases.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            testInputs = reader.readObject();
+        }
     }
-  }
 
-  @Test
-  public void rectangleSingleFailure() {
-    JSONObject input = testInputs.getJSONObject("rectangleSingleFailure");
-    TestSupport.expectFailure(rectangleSchema, NumberSchema.class, "#/rectangle/a", input);
-  }
+    private final Schema rectangleSchema = SchemaLoader.load(allSchemas.getJsonObject("pointerResolution"));
 
+    @Test
+    public void rectangleMultipleFailures() {
+        JsonObject input = testInputs.getJsonObject("rectangleMultipleFailures");
+        try {
+            rectangleSchema.validate(input);
+            Assert.fail();
+        }
+        catch (ValidationException e) {
+            Assert.assertEquals("#/rectangle", e.getPointerToViolation());
+            Assert.assertEquals(2, e.getCausingExceptions().size());
+            Assert.assertEquals(1, TestSupport.countCauseByJsonPointer(e, "#/rectangle/a"));
+            Assert.assertEquals(1, TestSupport.countCauseByJsonPointer(e, "#/rectangle/b"));
+        }
+    }
+
+    @Test
+    public void rectangleSingleFailure() {
+        JsonObject input = testInputs.getJsonObject("rectangleSingleFailure");
+        TestSupport.expectFailure(rectangleSchema, NumberSchema.class, "#/rectangle/a", input);
+    }
 }

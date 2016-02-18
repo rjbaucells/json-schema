@@ -16,8 +16,9 @@
 package org.everit.json.schema.loader.internal;
 
 import org.everit.json.schema.SchemaException;
-import org.json.JSONObject;
 
+import javax.json.JsonObject;
+import javax.json.JsonString;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ import java.util.function.Consumer;
  * typeMultiplexer(additionalProps)
  * .ifIs(JSONArray.class).then(arr -&gt; {...if additProps is a JSONArray then process it... })
  * .ifObject().then(obj -&gt; {...if additProps is a JSONArray then process it... })
- * .requireAny(); // throw a SchemaException if additProps is neither a JSONArray nor a JSONObject
+ * .requireAny(); // throw a SchemaException if additProps is neither a JSONArray nor a JsonObject
  * </code>
  * <p>
  * This class it NOT thread-safe.
@@ -51,7 +52,7 @@ public class TypeBasedMultiplexer {
      * {@link #then(Consumer)} into an other consumer which maintains
      * {@link org.everit.json.schema.loader.SchemaLoader#id}.
      */
-    private class IdModifyingTypeConsumerImpl extends OnTypeConsumerImpl<JSONObject> {
+    private class IdModifyingTypeConsumerImpl extends OnTypeConsumerImpl<JsonObject> {
 
         IdModifyingTypeConsumerImpl(final Class<?> key) {
             super(key);
@@ -65,9 +66,9 @@ public class TypeBasedMultiplexer {
          * @see {@link TypeBasedMultiplexer#ifObject()} for more details about the wrapping.
          */
         @Override
-        public TypeBasedMultiplexer then(final Consumer<JSONObject> consumer) {
-            Consumer<JSONObject> wrapperConsumer = obj -> {
-                if (obj.has("id") && obj.get("id") instanceof String) {
+        public TypeBasedMultiplexer then(final Consumer<JsonObject> consumer) {
+            Consumer<JsonObject> wrapperConsumer = obj -> {
+                if (obj.containsKey("id") && obj.get("id") instanceof JsonString) {
                     String origId = id;
                     String idAttr = obj.getString("id");
                     id = ReferenceResolver.resolve(id, idAttr);
@@ -189,33 +190,33 @@ public class TypeBasedMultiplexer {
      * @param <E>            the type represented by {@code predicateClass}.
      * @return an {@code OnTypeConsumer} implementation to be used to set the action performed if
      * {@code obj} is an instance of {@code predicateClass}.
-     * @throws IllegalArgumentException if {@code predicateClass} is {@link JSONObject}. Use {@link #ifObject()} for matching
-     *                                  {@code obj}'s class against {@link JSONObject}.
+     * @throws IllegalArgumentException if {@code predicateClass} is {@link JsonObject}. Use {@link #ifObject()} for matching
+     *                                  {@code obj}'s class against {@link JsonObject}.
      */
     public <E> OnTypeConsumer<E> ifIs(final Class<E> predicateClass) {
-        if (predicateClass == JSONObject.class) {
+        if (predicateClass == JsonObject.class) {
             throw new IllegalArgumentException("use ifObject() instead");
         }
         return new OnTypeConsumerImpl<E>(predicateClass);
     }
 
     /**
-     * Creates a {@link JSONObject} consumer setter.
+     * Creates a {@link JsonObject} consumer setter.
      * <p>
      * <p>
      * The returned {@link OnTypeConsumer} implementation will wrap the
      * {@link OnTypeConsumer#then(Consumer) passed consumer action} with an other consumer which
      * properly maintains the {@link org.everit.json.schema.loader.SchemaLoader#id} attribute, ie. if
-     * {@code obj} is a {@link JSONObject} instance and it has an {@code id} property then it will
+     * {@code obj} is a {@link JsonObject} instance and it has an {@code id} property then it will
      * append this id value to {@link org.everit.json.schema.loader.SchemaLoader#id} for the duration
      * of the action execution, then it will restore the original id.
      * </p>
      *
      * @return an {@code OnTypeConsumer} implementation to be used to set the action performed if
-     * {@code obj} is a JSONObject instance.
+     * {@code obj} is a JsonObject instance.
      */
-    public OnTypeConsumer<JSONObject> ifObject() {
-        return new IdModifyingTypeConsumerImpl(JSONObject.class);
+    public OnTypeConsumer<JsonObject> ifObject() {
+        return new IdModifyingTypeConsumerImpl(JsonObject.class);
     }
 
     /**

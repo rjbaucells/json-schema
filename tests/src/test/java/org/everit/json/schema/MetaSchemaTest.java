@@ -16,25 +16,39 @@
 package org.everit.json.schema;
 
 import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.junit.Test;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import java.io.InputStream;
 
 public class MetaSchemaTest {
 
-  @Test
-  public void validateMetaSchema() {
-
-    JSONObject jsonSchema = new JSONObject(new JSONTokener(
-        MetaSchemaTest.class
-            .getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json")));
-
-    JSONObject jsonSubject = new JSONObject(new JSONTokener(
-        MetaSchemaTest.class
-            .getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json")));
-
-    Schema schema = SchemaLoader.load(jsonSchema);
-    schema.validate(jsonSubject);
-  }
+    @Test
+    public void validateMetaSchema() {
+        // schema
+        JsonObject jsonSchema;
+        // get resource stream
+        InputStream stream = MetaSchemaTest.class.getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            jsonSchema = reader.readObject();
+        }
+        // subject
+        JsonObject jsonSubject;
+        // get resource stream
+        stream = MetaSchemaTest.class.getResourceAsStream("/org/everit/json/schema/json-schema-draft-04.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            jsonSubject = reader.readObject();
+        }
+        // load schema
+        Schema schema = SchemaLoader.load(jsonSchema);
+        // validate
+        schema.validate(jsonSubject);
+    }
 
 }

@@ -15,71 +15,77 @@
  */
 package org.everit.json.schema.loader;
 
-import java.util.HashMap;
-
 import org.everit.json.schema.ObjectComparator;
 import org.everit.json.schema.ReferenceSchema;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import java.io.InputStream;
+import java.util.HashMap;
+
 public class ExtendTest {
 
-  private static JSONObject OBJECTS;
+    private static JsonObject OBJECTS;
 
-  static {
-    OBJECTS = new JSONObject(new JSONTokener(
-        ExtendTest.class.getResourceAsStream("/org/everit/jsonvalidator/merge-testcases.json")));
-  }
+    static {
+        // get resource stream
+        InputStream stream = ExtendTest.class.getResourceAsStream("/org/everit/jsonvalidator/merge-testcases.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            OBJECTS = reader.readObject();
+        }
+    }
 
-  @Test
-  public void additionalHasMoreProps() {
-    JSONObject actual = subject().extend(get("propIsTrue"), get("empty"));
-    assertEquals(get("propIsTrue"), actual);
-  }
+    @Test
+    public void additionalHasMoreProps() {
+        JsonObject actual = subject().extend(get("propIsTrue"), get("empty"));
+        assertEquals(get("propIsTrue"), actual);
+    }
 
-  @Test
-  public void additionalOverridesOriginal() {
-    JSONObject actual = subject().extend(get("propIsTrue"), get("propIsFalse"));
-    assertEquals(get("propIsTrue"), actual);
-  }
+    @Test
+    public void additionalOverridesOriginal() {
+        JsonObject actual = subject().extend(get("propIsTrue"), get("propIsFalse"));
+        assertEquals(get("propIsTrue"), actual);
+    }
 
-  @Test
-  public void additionalPropsAreMerged() {
-    JSONObject actual = subject().extend(get("propIsTrue"), get("prop2IsFalse"));
-    assertEquals(actual, get("propTrueProp2False"));
-  }
+    @Test
+    public void additionalPropsAreMerged() {
+        JsonObject actual = subject().extend(get("propIsTrue"), get("prop2IsFalse"));
+        assertEquals(actual, get("propTrueProp2False"));
+    }
 
-  private void assertEquals(final JSONObject expected, final JSONObject actual) {
-    Assert.assertTrue(ObjectComparator.deepEquals(expected, actual));
-  }
+    private void assertEquals(final JsonObject expected, final JsonObject actual) {
+        Assert.assertTrue(ObjectComparator.deepEquals(expected, actual));
+    }
 
-  @Test
-  public void bothEmpty() {
-    JSONObject actual = subject().extend(get("empty"), get("empty"));
-    assertEquals(new JSONObject(), actual);
-  }
+    @Test
+    public void bothEmpty() {
+        JsonObject actual = subject().extend(get("empty"), get("empty"));
+        assertEquals(Json.createObjectBuilder().build(), actual);
+    }
 
-  private JSONObject get(final String objectName) {
-    return OBJECTS.getJSONObject(objectName);
-  }
+    private JsonObject get(final String objectName) {
+        return OBJECTS.getJsonObject(objectName);
+    }
 
-  @Test
-  public void multiplePropsAreMerged() {
-    JSONObject actual = subject().extend(get("multipleWithPropTrue"), get("multipleWithPropFalse"));
-    assertEquals(get("mergedMultiple"), actual);
-  }
+    @Test
+    public void multiplePropsAreMerged() {
+        JsonObject actual = subject().extend(get("multipleWithPropTrue"), get("multipleWithPropFalse"));
+        assertEquals(get("mergedMultiple"), actual);
+    }
 
-  @Test
-  public void originalPropertyRemainsUnchanged() {
-    JSONObject actual = subject().extend(get("empty"), get("propIsTrue"));
-    assertEquals(get("propIsTrue"), actual);
-  }
+    @Test
+    public void originalPropertyRemainsUnchanged() {
+        JsonObject actual = subject().extend(get("empty"), get("propIsTrue"));
+        assertEquals(get("propIsTrue"), actual);
+    }
 
-  private SchemaLoader subject() {
-    return new SchemaLoader("", new JSONObject(), new JSONObject(),
-        new HashMap<String, ReferenceSchema.Builder>(), new DefaultSchemaClient());
-  }
+    private SchemaLoader subject() {
+        return new SchemaLoader("", Json.createObjectBuilder().build(), Json.createObjectBuilder().build(), new HashMap<String, ReferenceSchema.Builder>(), new DefaultSchemaClient());
+    }
 }
