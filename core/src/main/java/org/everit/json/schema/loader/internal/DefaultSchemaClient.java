@@ -36,5 +36,4 @@ public class DefaultSchemaClient implements SchemaClient {
             throw new UncheckedIOException(e);
         }
     }
-
 }

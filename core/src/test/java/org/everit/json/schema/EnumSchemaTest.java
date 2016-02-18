@@ -15,44 +15,42 @@
  */
 package org.everit.json.schema;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.json.Json;
+import java.util.HashSet;
+import java.util.Set;
+
 public class EnumSchemaTest {
 
-  private Set<Object> possibleValues;
+    private Set<Object> possibleValues;
 
-  @Before
-  public void before() {
-    possibleValues = new HashSet<>();
-    possibleValues.add(true);
-    possibleValues.add("foo");
-    possibleValues.add(new JSONArray());
-    possibleValues.add(new JSONObject("{\"a\" : 0}"));
-  }
+    @Before
+    public void before() {
+        possibleValues = new HashSet<>();
+        possibleValues.add(true);
+        possibleValues.add("foo");
+        possibleValues.add(Json.createArrayBuilder().build());
+        possibleValues.add(Json.createObjectBuilder().add("a", 0).build());
+    }
 
-  @Test
-  public void failure() {
-    EnumSchema subject = subject();
-    TestSupport.expectFailure(subject, new JSONArray("[1]"));
-  }
+    @Test
+    public void failure() {
+        EnumSchema subject = subject();
+        TestSupport.expectFailure(subject, Json.createArrayBuilder().add(1).build());
+    }
 
-  private EnumSchema subject() {
-    return EnumSchema.builder().possibleValues(possibleValues).build();
-  }
+    private EnumSchema subject() {
+        return EnumSchema.builder().possibleValues(possibleValues).build();
+    }
 
-  @Test
-  public void success() {
-    EnumSchema subject = subject();
-    subject.validate(true);
-    subject.validate("foo");
-    subject.validate(new JSONArray());
-    subject.validate(new JSONObject("{\"a\" : 0}"));
-  }
-
+    @Test
+    public void success() {
+        EnumSchema subject = subject();
+        subject.validate(true);
+        subject.validate("foo");
+        subject.validate(Json.createArrayBuilder().build());
+        subject.validate(Json.createObjectBuilder().add("a", 0).build());
+    }
 }

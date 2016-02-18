@@ -72,5 +72,4 @@ public class EnumSchema extends Schema {
                 () -> new ValidationException(this, String.format("%s is not a valid enum value",
                     subject)));
     }
-
 }

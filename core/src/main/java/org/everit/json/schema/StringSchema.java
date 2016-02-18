@@ -15,6 +15,7 @@
  */
 package org.everit.json.schema;
 
+import javax.json.JsonString;
 import java.util.regex.Pattern;
 
 /**
@@ -28,11 +29,8 @@ public class StringSchema extends Schema {
     public static class Builder extends Schema.Builder<StringSchema> {
 
         private Integer minLength;
-
         private Integer maxLength;
-
         private String pattern;
-
         private boolean requiresString = true;
 
         @Override
@@ -59,7 +57,6 @@ public class StringSchema extends Schema {
             this.requiresString = requiresString;
             return this;
         }
-
     }
 
     public static Builder builder() {
@@ -85,15 +82,11 @@ public class StringSchema extends Schema {
      */
     public StringSchema(final Builder builder) {
         super(builder);
+        // initialize fields
         this.minLength = builder.minLength;
         this.maxLength = builder.maxLength;
         this.requiresString = builder.requiresString;
-        if (builder.pattern != null) {
-            this.pattern = Pattern.compile(builder.pattern);
-        }
-        else {
-            this.pattern = null;
-        }
+        this.pattern = builder.pattern != null ? Pattern.compile(builder.pattern) : null;
     }
 
     public Integer getMaxLength() {
@@ -109,36 +102,48 @@ public class StringSchema extends Schema {
     }
 
     private void testLength(final String subject) {
+        // text length
         int actualLength = subject.length();
-        if (minLength != null && actualLength < minLength.intValue()) {
-            throw new ValidationException(this, "expected minLength: " + minLength + ", actual: "
-                + actualLength);
+        // check min length is defined
+        if (minLength != null && actualLength < minLength) {
+            // throw validation exception
+            throw new ValidationException(this, "expected minLength: " + minLength + ", actual: " + actualLength);
         }
-        if (maxLength != null && actualLength > maxLength.intValue()) {
-            throw new ValidationException(this, "expected maxLength: " + maxLength + ", actual: "
-                + actualLength);
+        // check max length is defined
+        if (maxLength != null && actualLength > maxLength) {
+            // throw validation exception
+            throw new ValidationException(this, "expected maxLength: " + maxLength + ", actual: " + actualLength);
         }
     }
 
     private void testPattern(final String subject) {
+        // check pattern was provided
         if (pattern != null && !pattern.matcher(subject).find()) {
-            throw new ValidationException(this, String.format("string [%s] does not match pattern %s",
-                subject, pattern.pattern()));
+            // throw validation exception
+            throw new ValidationException(this, String.format("string [%s] does not match pattern %s", subject, pattern.pattern()));
         }
     }
 
     @Override
     public void validate(final Object subject) {
-        if (!(subject instanceof String)) {
-            if (requiresString) {
-                throw new ValidationException(this, String.class, subject);
-            }
+        // check subject type
+        if (subject instanceof JsonString) {
+            // text value
+            String text = ((JsonString)subject).getString();
+            // validate length and pattern
+            testLength(text);
+            testPattern(text);
         }
-        else {
-            String stringSubject = (String)subject;
-            testLength(stringSubject);
-            testPattern(stringSubject);
+        else if (subject instanceof String) {
+            // text value
+            String text = (String)subject;
+            // validate length and pattern
+            testLength(text);
+            testPattern(text);
+        }
+        else if (requiresString) {
+            // validation exception
+            throw new ValidationException(this, String.class, subject);
         }
     }
-
 }

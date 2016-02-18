@@ -15,19 +15,18 @@
  */
 package org.everit.json.schema;
 
-import org.json.JSONObject;
 import org.junit.Test;
 
 public class NullSchemaTest {
 
-  @Test
-  public void failure() {
-    TestSupport.expectFailure(NullSchema.INSTANCE, "null");
-  }
+    @Test
+    public void failure() {
+        TestSupport.expectFailure(NullSchema.INSTANCE, "null");
+    }
 
-  @Test
-  public void success() {
-    JSONObject obj = new JSONObject("{\"a\" : null}");
-    NullSchema.INSTANCE.validate(obj.get("a"));
-  }
+    @Test
+    public void success() {
+        // validate
+        NullSchema.INSTANCE.validate(null);
+    }
 }

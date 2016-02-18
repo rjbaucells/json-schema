@@ -60,6 +60,6 @@ public class NotSchema extends Schema {
         catch (ValidationException e) {
             return;
         }
-        throw new ValidationException(this, "subject must not be valid agains schema " + mustNotMatch);
+        throw new ValidationException(this, "subject must not be valid against schema " + mustNotMatch);
     }
 }

@@ -348,12 +348,12 @@ public class ObjectSchema extends Schema {
 
     private List<ValidationException> testSize(final JsonObject subject) {
         int actualSize = subject.size();
-        if (minProperties != null && actualSize < minProperties.intValue()) {
+        if (minProperties != null && actualSize < minProperties) {
             return Arrays
                 .asList(new ValidationException(this, String.format("minimum size: [%d], found: [%d]",
                     minProperties, actualSize)));
         }
-        if (maxProperties != null && actualSize > maxProperties.intValue()) {
+        if (maxProperties != null && actualSize > maxProperties) {
             return Arrays
                 .asList(new ValidationException(this, String.format("maximum size: [%d], found: [%d]",
                     maxProperties, actualSize)));
@@ -363,23 +363,32 @@ public class ObjectSchema extends Schema {
 
     @Override
     public void validate(final Object subject) {
-        if (!(subject instanceof JsonObject)) {
-            if (requiresObject) {
-                throw new ValidationException(this, JsonObject.class, subject);
-            }
-        }
-        else {
+        // check it is a JsonObject
+        if (subject instanceof JsonObject) {
+            // list of all failures
             List<ValidationException> failures = new ArrayList<>();
+            // cast
             JsonObject objSubject = (JsonObject)subject;
+            // properties
             failures.addAll(testProperties(objSubject));
+            // required properties
             failures.addAll(testRequiredProperties(objSubject));
+            // additional properties
             failures.addAll(testAdditionalProperties(objSubject));
+            // object size
             failures.addAll(testSize(objSubject));
+            // property dependencies
             failures.addAll(testPropertyDependencies(objSubject));
+            // schema dependencies
             failures.addAll(testSchemaDependencies(objSubject));
+            // pattern properties
             failures.addAll(testPatternProperties(objSubject));
+            // throw validation exception
             ValidationException.throwFor(this, failures);
         }
+        else if (requiresObject) {
+            // throw validation exception
+            throw new ValidationException(this, JsonObject.class, subject);
+        }
     }
-
 }

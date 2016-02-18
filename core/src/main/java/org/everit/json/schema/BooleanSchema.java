@@ -15,6 +15,8 @@
  */
 package org.everit.json.schema;
 
+import javax.json.JsonValue;
+
 /**
  * Boolean schema validator.
  */
@@ -29,7 +31,6 @@ public class BooleanSchema extends Schema {
         public BooleanSchema build() {
             return new BooleanSchema(this);
         }
-
     }
 
     public static final BooleanSchema INSTANCE = new BooleanSchema(builder());
@@ -44,8 +45,8 @@ public class BooleanSchema extends Schema {
 
     @Override
     public void validate(final Object subject) {
-        if (!(subject instanceof Boolean)) {
+        // check for boolean value
+        if (!(subject instanceof Boolean) && !JsonValue.TRUE.equals(subject) && !JsonValue.FALSE.equals(subject))
             throw new ValidationException(this, Boolean.class, subject);
-        }
     }
 }

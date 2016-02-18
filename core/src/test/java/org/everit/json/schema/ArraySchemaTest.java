@@ -15,119 +15,131 @@
  */
 package org.everit.json.schema;
 
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.junit.Test;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import java.io.InputStream;
 
 public class ArraySchemaTest {
 
-  private static final JSONObject ARRAYS = new JSONObject(new JSONTokener(
-      ArraySchemaTest.class.getResourceAsStream("/org/everit/jsonvalidator/arraytestcases.json")));
+    private static final JsonObject ARRAYS;
 
-  @Test
-  public void additionalItemsSchema() {
-    ArraySchema.builder()
-    .addItemSchema(BooleanSchema.INSTANCE)
-    .schemaOfAdditionalItems(NullSchema.INSTANCE)
-    .build().validate(ARRAYS.get("additionalItemsSchema"));
-  }
+    static {
+        // get resource stream
+        InputStream stream = ArraySchemaTest.class.getResourceAsStream("/org/everit/jsonvalidator/arraytestcases.json");
+        // create reader
+        try (JsonReader reader = Json.createReader(stream)) {
+            // read json object
+            ARRAYS = reader.readObject();
+        }
+    }
 
-  @Test
-  public void additionalItemsSchemaFailure() {
-    ArraySchema subject = ArraySchema.builder()
-        .addItemSchema(BooleanSchema.INSTANCE)
-        .schemaOfAdditionalItems(NullSchema.INSTANCE)
-        .build();
-    TestSupport.expectFailure(subject, NullSchema.INSTANCE, "#/2",
-        ARRAYS.get("additionalItemsSchemaFailure"));
-  }
+    @Test
+    public void additionalItemsSchema() {
+        ArraySchema.builder()
+            .addItemSchema(BooleanSchema.INSTANCE)
+            .schemaOfAdditionalItems(NullSchema.INSTANCE)
+            .build().validate(ARRAYS.getJsonArray("additionalItemsSchema"));
+    }
 
-  @Test
-  public void booleanItems() {
-    ArraySchema subject = ArraySchema.builder().allItemSchema(BooleanSchema.INSTANCE).build();
-    TestSupport.expectFailure(subject, BooleanSchema.INSTANCE, "#/2", ARRAYS.get("boolArrFailure"));
-  }
+    @Test
+    public void additionalItemsSchemaFailure() {
+        ArraySchema subject = ArraySchema.builder()
+            .addItemSchema(BooleanSchema.INSTANCE)
+            .schemaOfAdditionalItems(NullSchema.INSTANCE)
+            .build();
+        TestSupport.expectFailure(subject, NullSchema.INSTANCE, "#/2",
+            ARRAYS.get("additionalItemsSchemaFailure"));
+    }
 
-  @Test
-  public void doesNotRequireExplicitArray() {
-    ArraySchema.builder()
-    .requiresArray(false)
-    .uniqueItems(true)
-    .build().validate(ARRAYS.get("doesNotRequireExplicitArray"));
-  }
+    @Test
+    public void booleanItems() {
+        ArraySchema subject = ArraySchema.builder().allItemSchema(BooleanSchema.INSTANCE).build();
+        TestSupport.expectFailure(subject, BooleanSchema.INSTANCE, "#/2", ARRAYS.get("boolArrFailure"));
+    }
 
-  @Test
-  public void maxItems() {
-    ArraySchema subject = ArraySchema.builder().maxItems(0).build();
-    TestSupport.expectFailure(subject, "#", ARRAYS.get("onlyOneItem"));
-  }
+    @Test
+    public void doesNotRequireExplicitArray() {
+        ArraySchema.builder()
+            .requiresArray(false)
+            .uniqueItems(true)
+            .build().validate(ARRAYS.get("doesNotRequireExplicitArray"));
+    }
 
-  @Test
-  public void minItems() {
-    ArraySchema subject = ArraySchema.builder().minItems(2).build();
-    TestSupport.expectFailure(subject, "#", ARRAYS.get("onlyOneItem"));
-  }
+    @Test
+    public void maxItems() {
+        ArraySchema subject = ArraySchema.builder().maxItems(0).build();
+        TestSupport.expectFailure(subject, "#", ARRAYS.get("onlyOneItem"));
+    }
 
-  @Test
-  public void noAdditionalItems() {
-    ArraySchema subject = ArraySchema.builder()
-        .additionalItems(false)
-        .addItemSchema(BooleanSchema.INSTANCE)
-        .addItemSchema(NullSchema.INSTANCE)
-        .build();
-    TestSupport.expectFailure(subject, "#", ARRAYS.get("twoItemTupleWithAdditional"));
-  }
+    @Test
+    public void minItems() {
+        ArraySchema subject = ArraySchema.builder().minItems(2).build();
+        TestSupport.expectFailure(subject, "#", ARRAYS.get("onlyOneItem"));
+    }
 
-  @Test
-  public void noItemSchema() {
-    ArraySchema.builder().build().validate(ARRAYS.get("noItemSchema"));
-  }
+    @Test
+    public void noAdditionalItems() {
+        ArraySchema subject = ArraySchema.builder()
+            .additionalItems(false)
+            .addItemSchema(BooleanSchema.INSTANCE)
+            .addItemSchema(NullSchema.INSTANCE)
+            .build();
+        TestSupport.expectFailure(subject, "#", ARRAYS.get("twoItemTupleWithAdditional"));
+    }
 
-  @Test
-  public void nonUniqueArrayOfArrays() {
-    ArraySchema subject = ArraySchema.builder().uniqueItems(true).build();
-    TestSupport.expectFailure(subject, "#", ARRAYS.get("nonUniqueArrayOfArrays"));
-  }
+    @Test
+    public void noItemSchema() {
+        ArraySchema.builder().build().validate(ARRAYS.get("noItemSchema"));
+    }
 
-  @Test(expected = SchemaException.class)
-  public void tupleAndListFailure() {
-    ArraySchema.builder().addItemSchema(BooleanSchema.INSTANCE).allItemSchema(NullSchema.INSTANCE)
-    .build();
-  }
+    @Test
+    public void nonUniqueArrayOfArrays() {
+        ArraySchema subject = ArraySchema.builder().uniqueItems(true).build();
+        TestSupport.expectFailure(subject, "#", ARRAYS.get("nonUniqueArrayOfArrays"));
+    }
 
-  @Test
-  public void tupleWithOneItem() {
-    ArraySchema subject = ArraySchema.builder().addItemSchema(BooleanSchema.INSTANCE).build();
-    TestSupport.expectFailure(subject, BooleanSchema.INSTANCE, "#/0",
-        ARRAYS.get("tupleWithOneItem"));
-  }
+    @Test(expected = SchemaException.class)
+    public void tupleAndListFailure() {
+        ArraySchema.builder().addItemSchema(BooleanSchema.INSTANCE).allItemSchema(NullSchema.INSTANCE)
+            .build();
+    }
 
-  @Test
-  public void typeFailure() {
-    TestSupport.expectFailure(ArraySchema.builder().build(), true);
-  }
+    @Test
+    public void tupleWithOneItem() {
+        ArraySchema subject = ArraySchema.builder().addItemSchema(BooleanSchema.INSTANCE).build();
+        TestSupport.expectFailure(subject, BooleanSchema.INSTANCE, "#/0",
+            ARRAYS.get("tupleWithOneItem"));
+    }
 
-  @Test
-  public void uniqueItemsObjectViolation() {
-    ArraySchema subject = ArraySchema.builder().uniqueItems(true).build();
-    TestSupport.expectFailure(subject, "#", ARRAYS.get("nonUniqueObjects"));
-  }
+    @Test
+    public void typeFailure() {
+        TestSupport.expectFailure(ArraySchema.builder().build(), true);
+    }
 
-  @Test
-  public void uniqueItemsViolation() {
-    ArraySchema subject = ArraySchema.builder().uniqueItems(true).build();
-    TestSupport.expectFailure(subject, "#", ARRAYS.get("nonUniqueItems"));
-  }
+    @Test
+    public void uniqueItemsObjectViolation() {
+        ArraySchema subject = ArraySchema.builder().uniqueItems(true).build();
+        TestSupport.expectFailure(subject, "#", ARRAYS.get("nonUniqueObjects"));
+    }
 
-  @Test
-  public void uniqueItemsWithSameToString() {
-    ArraySchema.builder().uniqueItems(true).build()
-    .validate(ARRAYS.get("uniqueItemsWithSameToString"));
-  }
+    @Test
+    public void uniqueItemsViolation() {
+        ArraySchema subject = ArraySchema.builder().uniqueItems(true).build();
+        TestSupport.expectFailure(subject, "#", ARRAYS.get("nonUniqueItems"));
+    }
 
-  @Test
-  public void uniqueObjectValues() {
-    ArraySchema.builder().uniqueItems(true).build()
-    .validate(ARRAYS.get("uniqueObjectValues"));
-  }
+    @Test
+    public void uniqueItemsWithSameToString() {
+        ArraySchema.builder().uniqueItems(true).build()
+            .validate(ARRAYS.get("uniqueItemsWithSameToString"));
+    }
+
+    @Test
+    public void uniqueObjectValues() {
+        ArraySchema.builder().uniqueItems(true).build()
+            .validate(ARRAYS.get("uniqueObjectValues"));
+    }
 }

@@ -16,6 +16,7 @@
 package org.everit.json.schema;
 
 import javax.annotation.Generated;
+import java.util.Objects;
 
 /**
  * Superclass of all other schema validator classes of this package.
@@ -32,9 +33,7 @@ public abstract class Schema {
     public abstract static class Builder<S extends Schema> {
 
         private String title;
-
         private String description;
-
         private String id;
 
         public Builder<S> title(final String title) {
@@ -53,13 +52,10 @@ public abstract class Schema {
         }
 
         public abstract S build();
-
     }
 
     private final String title;
-
     private final String description;
-
     private final String id;
 
     /**
@@ -68,6 +64,8 @@ public abstract class Schema {
      * @param builder the builder containing the optional title, description and id attributes of the schema
      */
     protected Schema(final Builder<?> builder) {
+        Objects.requireNonNull(builder, "builder cannot be null");
+        // initialize fields
         this.title = builder.title;
         this.description = builder.description;
         this.id = builder.id;
@@ -142,5 +140,4 @@ public abstract class Schema {
     public String getId() {
         return id;
     }
-
 }

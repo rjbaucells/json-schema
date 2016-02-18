@@ -33,19 +33,12 @@ public class ArraySchema extends Schema {
     public static class Builder extends Schema.Builder<ArraySchema> {
 
         private boolean requiresArray = true;
-
         private Integer minItems;
-
         private Integer maxItems;
-
         private boolean uniqueItems = false;
-
         private Schema allItemSchema;
-
         private List<Schema> itemSchemas = null;
-
         private boolean additionalItems = true;
-
         private Schema schemaOfAdditionalItems;
 
         /**
@@ -111,19 +104,12 @@ public class ArraySchema extends Schema {
     }
 
     private final Integer minItems;
-
     private final Integer maxItems;
-
     private final boolean uniqueItems;
-
     private final Schema allItemSchema;
-
     private final boolean additionalItems;
-
     private final List<Schema> itemSchemas;
-
     private final boolean requiresArray;
-
     private final Schema schemaOfAdditionalItems;
 
     /**
@@ -133,6 +119,7 @@ public class ArraySchema extends Schema {
      */
     public ArraySchema(final Builder builder) {
         super(builder);
+        // initialize fields
         this.minItems = builder.minItems;
         this.maxItems = builder.maxItems;
         this.uniqueItems = builder.uniqueItems;
@@ -245,7 +232,7 @@ public class ArraySchema extends Schema {
         if (subject.size() == 0) {
             return Optional.empty();
         }
-        Collection<Object> uniqueItems = new ArrayList<Object>(subject.size());
+        Collection<Object> uniqueItems = new ArrayList<>(subject.size());
         for (int i = 0; i < subject.size(); ++i) {
             Object item = subject.get(i);
             for (Object contained : uniqueItems) {
@@ -260,21 +247,25 @@ public class ArraySchema extends Schema {
 
     @Override
     public void validate(final Object subject) {
-        List<ValidationException> failures = new ArrayList<>();
-        if (!(subject instanceof JsonArray)) {
-            if (requiresArray) {
-                throw new ValidationException(this, JsonArray.class, subject);
-            }
-        }
-        else {
+        // check type
+        if (subject instanceof JsonArray) {
+            // all failures
+            List<ValidationException> failures = new ArrayList<>();
+            // cast
             JsonArray arrSubject = (JsonArray)subject;
+            // item count, update failures
             testItemCount(arrSubject).ifPresent(failures::add);
-            if (uniqueItems) {
+            // validate unique items if needed
+            if (uniqueItems)
                 testUniqueness(arrSubject).ifPresent(failures::add);
-            }
+            // test items
             failures.addAll(testItems(arrSubject));
+            // throw exception if needed
+            ValidationException.throwFor(this, failures);
         }
-        ValidationException.throwFor(this, failures);
+        else if (requiresArray) {
+            // throw validation exception
+            throw new ValidationException(this, JsonArray.class, subject);
+        }
     }
-
 }

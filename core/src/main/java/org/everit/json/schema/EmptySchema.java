@@ -46,5 +46,4 @@ public class EmptySchema extends Schema {
     public void validate(final Object subject) {
         // always passing
     }
-
 }

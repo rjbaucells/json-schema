@@ -15,6 +15,7 @@
  */
 package org.everit.json.schema;
 
+import javax.json.JsonNumber;
 import java.math.BigDecimal;
 
 /**
@@ -177,22 +178,43 @@ public class NumberSchema extends Schema {
         return requiresInteger;
     }
 
-    @Override
-    public void validate(final Object subject) {
-        if (!(subject instanceof Number)) {
-            if (requiresNumber) {
-                throw new ValidationException(this, Number.class, subject);
-            }
-        }
-        else {
-            if (!(subject instanceof Integer) && requiresInteger) {
-                throw new ValidationException(this, Integer.class, subject);
-            }
-            double intSubject = ((Number)subject).doubleValue();
-            checkMinimum(intSubject);
-            checkMaximum(intSubject);
-            checkMultipleOf(intSubject);
-        }
+    private void validate(final double value) {
+        // check minimum value
+        checkMinimum(value);
+        // check maximum value
+        checkMaximum(value);
+        // multiple of
+        checkMultipleOf(value);
     }
 
+    @Override
+    public void validate(final Object subject) {
+        // check type
+        if (subject instanceof JsonNumber) {
+            // cast
+            JsonNumber number = (JsonNumber)subject;
+            // check it must be an integer value
+            if (requiresInteger && !number.isIntegral()) {
+                // throw validation exception
+                throw new ValidationException(this, Integer.class, subject);
+            }
+            // validate double value
+            validate(number.doubleValue());
+        }
+        else if (subject instanceof Number) {
+            // cast
+            Number number = (Number)subject;
+            // check it must be an integer value
+            if (requiresInteger && !(number instanceof Integer)) {
+                // throw validation exception
+                throw new ValidationException(this, Integer.class, subject);
+            }
+            // validate double value
+            validate(number.doubleValue());
+        }
+        else if (requiresNumber) {
+            // throw validation exception
+            throw new ValidationException(this, Number.class, subject);
+        }
+    }
 }
