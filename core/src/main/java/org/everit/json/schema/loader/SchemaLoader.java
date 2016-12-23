@@ -199,7 +199,7 @@ public class SchemaLoader {
         // add constraints
         ifPresent("minItems", JsonNumber.class, JsonNumber::intValue, builder::minItems);
         ifPresent("maxItems", JsonNumber.class, JsonNumber::intValue, builder::maxItems);
-        ifPresent("uniqueItems", JsonValue.class, JsonValue.TRUE::equals, builder::uniqueItems);
+        ifPresent("uniqueItems", Arrays.asList(JsonValue.ValueType.TRUE, JsonValue.ValueType.FALSE), JsonValue.TRUE::equals, builder::uniqueItems);
         // check additional items was provided
         if (schemaJson.containsKey("additionalItems")) {
             // create and configure multiplexer
@@ -241,8 +241,8 @@ public class SchemaLoader {
         ifPresent("minimum", JsonNumber.class, JsonNumber::intValue, builder::minimum);
         ifPresent("maximum", JsonNumber.class, JsonNumber::intValue, builder::maximum);
         ifPresent("multipleOf", JsonNumber.class, JsonNumber::doubleValue, builder::multipleOf);
-        ifPresent("exclusiveMinimum", JsonValue.class, JsonValue.TRUE::equals, builder::exclusiveMinimum);
-        ifPresent("exclusiveMaximum", JsonValue.class, JsonValue.TRUE::equals, builder::exclusiveMaximum);
+        ifPresent("exclusiveMinimum", Arrays.asList(JsonValue.ValueType.TRUE, JsonValue.ValueType.FALSE), JsonValue.TRUE::equals, builder::exclusiveMinimum);
+        ifPresent("exclusiveMaximum", Arrays.asList(JsonValue.ValueType.TRUE, JsonValue.ValueType.FALSE), JsonValue.TRUE::equals, builder::exclusiveMaximum);
         // return builder
         return builder;
     }
@@ -344,11 +344,11 @@ public class SchemaLoader {
     private <E> void ifPresent(final String key, final Class<E> expectedType, final Consumer<E> consumer) {
         // check schema
         if (schemaJson.containsKey(key)) {
-            // cast value to expected type
-            E value = (E)schemaJson.get(key);
+            // value
+            JsonValue value = schemaJson.get(key);
             try {
                 // convert value and consume it
-                consumer.accept(value);
+                consumer.accept((E)value);
             }
             catch (ClassCastException e) {
                 // invalid type!
@@ -358,18 +358,42 @@ public class SchemaLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private <E, V> void ifPresent(final String key, final Class<E> expectedType, final Function<E, V> convert, final Consumer<V> consumer) {
+    private <E extends JsonValue, V> void ifPresent(final String key, final Class<E> expectedType, final Function<E, V> convert, final Consumer<V> consumer) {
         // check schema
         if (schemaJson.containsKey(key)) {
-            // cast value to expected type
-            E value = (E)schemaJson.get(key);
+            // value
+            JsonValue value = schemaJson.get(key);
             try {
                 // convert value and consume it
-                consumer.accept(convert.apply(value));
+                consumer.accept(convert.apply((E)value));
             }
             catch (ClassCastException e) {
                 // invalid type!
                 throw new SchemaException(key, expectedType, value);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <V> void ifPresent(final String key, final Collection<JsonValue.ValueType> expectedValueTypes, final Function<JsonValue, V> convert, final Consumer<V> consumer) {
+        // check schema
+        if (schemaJson.containsKey(key)) {
+            // get value
+            JsonValue value = schemaJson.get(key);
+            // check value type
+            if (expectedValueTypes.contains(value.getValueType())) {
+                try {
+                    // convert value and consume it
+                    consumer.accept(convert.apply(value));
+                }
+                catch (ClassCastException e) {
+                    // invalid type!
+                    throw new SchemaException(key, expectedValueTypes, value.getValueType());
+                }
+            }
+            else {
+                // invalid type!
+                throw new SchemaException(key, expectedValueTypes, value.getValueType());
             }
         }
     }

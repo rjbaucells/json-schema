@@ -259,7 +259,7 @@ public class ValueTypeBasedMultiplexer {
     public void requireAny() {
         orElse(jsonValue -> {
             // throw exception
-            throw new SchemaException(keyOfObj, actions.keySet(), jsonValue);
+            throw new SchemaException(keyOfObj, actions.keySet(), jsonValue.getValueType());
         });
     }
 

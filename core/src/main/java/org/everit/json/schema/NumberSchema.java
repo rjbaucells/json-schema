@@ -89,9 +89,7 @@ public class NumberSchema extends Schema {
     private final Number multipleOf;
 
     private boolean exclusiveMinimum = false;
-
     private boolean exclusiveMaximum = false;
-
     private final boolean requiresInteger;
 
     public NumberSchema() {

@@ -39,8 +39,8 @@ public class SchemaException extends RuntimeException {
         super(String.format("key %s: expected type is one of %s, found: %s", key, joinClassNames(expectedTypes), typeOfValue(actualValue)));
     }
 
-    public SchemaException(final String key, final Collection<JsonValue.ValueType> expectedValueTypes, final JsonValue actualValue) {
-        super(String.format("key %s: expected type is one of %s, found: %s", key, joinValueTypes(expectedValueTypes), typeOfValue(actualValue)));
+    public SchemaException(final String key, final Collection<JsonValue.ValueType> expectedValueTypes, final JsonValue.ValueType actualValueType) {
+        super(String.format("key %s: expected type is one of %s, found: %s", key, joinValueTypes(expectedValueTypes), typeOfValue(actualValueType)));
     }
 
     private static Object typeOfValue(final Object actualValue) {
